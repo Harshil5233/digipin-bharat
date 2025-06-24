@@ -23,7 +23,7 @@
 
 ## Getting Started
 
-- Download the app from the [Google Play Store](#) (link coming soon).
+- Download the app from the [[Google Play Store]](https://play.google.com/store/apps/details?id=com.digipin.bharat)(#) 
 - Open the app and follow the simple onboarding steps.
 
 ---
