@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Open Digipin App</title>
+  <meta charset="utf-8">
+</head>
+<body>
+  <script>
+    // Get pin from the query string
+    var urlParams = new URLSearchParams(window.location.search);
+    var pin = urlParams.get("pin") || "";
+
+    // Construct intent URL for Android
+    var intentUrl = "intent://digipin-bharat/digpin?pin=" + encodeURIComponent(pin)
+      + "#Intent;scheme=https;package=com.digipin.bharat;end";
+
+    // Try to open the app
+    window.location = intentUrl;
+
+    // After 2 seconds, redirect to Play Store
+    setTimeout(function() {
+      window.location = "https://play.google.com/store/apps/details?id=com.digipin.bharat";
+    }, 2000);
+  </script>
+  <p>Opening app...</p>
+</body>
+</html>
