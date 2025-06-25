@@ -1,27 +1,217 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Open Digipin App</title>
-  <meta charset="utf-8">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DigiPin Bharat - Opening Location</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #DC143C, #FFD700, #B22222);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        .container {
+            text-align: center;
+            padding: 2rem;
+            max-width: 500px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: white;
+            border-radius: 50%;
+            margin: 0 auto 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            color: #DC143C;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        .title {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        .subtitle {
+            font-size: 1rem;
+            margin-bottom: 1.5rem;
+            opacity: 0.9;
+        }
+        .digipin {
+            background: rgba(255,255,255,0.2);
+            padding: 1rem;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 1.5rem;
+            letter-spacing: 2px;
+        }
+        .download-btn {
+            background: #FFD700;
+            color: #1A1A1A;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: transform 0.2s;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            margin: 0.5rem;
+        }
+        .download-btn:hover {
+            transform: translateY(-2px);
+        }
+        .status {
+            margin-top: 1.5rem;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        .spinner {
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top: 3px solid white;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 1rem auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
 </head>
 <body>
-  <script>
-    // Get pin from the query string
-    var urlParams = new URLSearchParams(window.location.search);
-    var pin = urlParams.get("pin") || "";
+    <div class="container">
+        <div class="logo">📍</div>
+        <h1 class="title">DigiPin Bharat</h1>
+        <p class="subtitle">Opening your digital location...</p>
+        
+        <div class="digipin" id="digipinDisplay"></div>
+        
+        <div class="spinner"></div>
+        <div class="status" id="status">Trying to open in app...</div>
+        
+        <div style="margin-top: 2rem;">
+            <a href="https://play.google.com/store/apps/details?id=com.digipin.bharat" class="download-btn" id="playStoreBtn" style="display: none;">
+                📱 Download from Play Store
+            </a>
+            <a href="#" class="download-btn" id="retryBtn" style="display: none;" onclick="tryOpenApp()">
+                🔄 Try Again
+            </a>
+        </div>
+    </div>
 
-    // Construct intent URL for Android
-    var intentUrl = "intent://digipin-bharat/digpin?pin=" + encodeURIComponent(pin)
-      + "#Intent;scheme=https;package=com.digipin.bharat;end";
+    <script>
+        // Get DigiPin from URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const digipin = urlParams.get('pin') || urlParams.get('digipin') || urlParams.get('code');
+        
+        // Display DigiPin
+        if (digipin) {
+            document.getElementById('digipinDisplay').textContent = digipin;
+        } else {
+            document.getElementById('digipinDisplay').textContent = 'Invalid DigiPin';
+        }
 
-    // Try to open the app
-    window.location = intentUrl;
+        let attemptCount = 0;
+        const maxAttempts = 2;
 
-    // After 2 seconds, redirect to Play Store
-    setTimeout(function() {
-      window.location = "https://play.google.com/store/apps/details?id=com.digipin.bharat";
-    }, 2000);
-  </script>
-  <p>Opening app...</p>
+        function tryOpenApp() {
+            if (!digipin) {
+                showFallback('Invalid DigiPin provided');
+                return;
+            }
+
+            attemptCount++;
+            
+            // Update status
+            document.getElementById('status').textContent = `Attempt ${attemptCount}: Opening DigiPin app...`;
+            
+            // Try different app opening methods
+            const appUrls = [
+                `intent://harshil5233.github.io/digipin-bharat/digpin?pin=${digipin}#Intent;scheme=https;package=com.digipin.bharat;end`,
+                `https://harshil5233.github.io/digipin-bharat/digpin?pin=${digipin}`,
+                `digipin://open?pin=${digipin}`
+            ];
+
+            // Try to open the app
+            const currentUrl = appUrls[Math.min(attemptCount - 1, appUrls.length - 1)];
+            
+            // For Android devices
+            if (/Android/i.test(navigator.userAgent)) {
+                // Create a hidden iframe to trigger the app
+                const iframe = document.createElement('iframe');
+                iframe.style.display = 'none';
+                iframe.src = currentUrl;
+                document.body.appendChild(iframe);
+                
+                // Remove iframe after attempt
+                setTimeout(() => {
+                    document.body.removeChild(iframe);
+                }, 1000);
+            } else {
+                // For other platforms, try direct navigation
+                window.location.href = currentUrl;
+            }
+
+            // Set timeout to show fallback options
+            setTimeout(() => {
+                if (attemptCount >= maxAttempts) {
+                    showFallback('App not installed or failed to open');
+                } else {
+                    // Show retry option
+                    document.getElementById('retryBtn').style.display = 'inline-block';
+                    document.getElementById('status').textContent = 'App not responding. Try again or download from Play Store.';
+                }
+            }, 3000);
+
+            // Always show Play Store option after first attempt
+            setTimeout(() => {
+                document.getElementById('playStoreBtn').style.display = 'inline-block';
+            }, 2000);
+        }
+
+        function showFallback(message) {
+            document.querySelector('.spinner').style.display = 'none';
+            document.getElementById('status').textContent = message;
+            document.getElementById('playStoreBtn').style.display = 'inline-block';
+            
+            // Auto-redirect to Play Store after 5 seconds
+            setTimeout(() => {
+                window.location.href = 'https://play.google.com/store/apps/details?id=com.digipin.bharat';
+            }, 5000);
+        }
+
+        // Start the app opening process
+        setTimeout(tryOpenApp, 1000);
+
+        // Handle page visibility change (user switched back to browser)
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden && attemptCount > 0) {
+                // User came back to browser, app probably didn't open
+                setTimeout(() => {
+                    if (document.getElementById('playStoreBtn').style.display === 'none') {
+                        showFallback('Please install DigiPin Bharat app');
+                    }
+                }, 1000);
+            }
+        });
+    </script>
 </body>
 </html>
