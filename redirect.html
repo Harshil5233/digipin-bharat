@@ -111,105 +111,109 @@
             <a href="https://play.google.com/store/apps/details?id=com.digipin.bharat" class="download-btn" id="playStoreBtn" style="display: none;">
                 📱 Download from Play Store
             </a>
-            <a href="#" class="download-btn" id="retryBtn" style="display: none;" onclick="tryOpenApp()">
+            <button class="download-btn" id="retryBtn" style="display: none;" onclick="tryOpenApp(true)">
                 🔄 Try Again
-            </a>
+            </button>
         </div>
     </div>
 
     <script>
-        // Get DigiPin from URL parameters
+        // Extract DigiPin from URL parameters
         const urlParams = new URLSearchParams(window.location.search);
         const digipin = urlParams.get('pin') || urlParams.get('digipin') || urlParams.get('code');
-        
-        // Display DigiPin
+        const digipinDisplay = document.getElementById('digipinDisplay');
+
         if (digipin) {
-            document.getElementById('digipinDisplay').textContent = digipin;
+            digipinDisplay.textContent = digipin;
         } else {
-            document.getElementById('digipinDisplay').textContent = 'Invalid DigiPin';
+            digipinDisplay.textContent = 'Invalid DigiPin';
         }
 
-        let attemptCount = 0;
-        const maxAttempts = 2;
+        // Helper to detect Android
+        function isAndroid() {
+            return /Android/i.test(navigator.userAgent);
+        }
 
-        function tryOpenApp() {
+        // Helper to detect Chrome on Android (best for intent)
+        function isChromeOnAndroid() {
+            return isAndroid() && /Chrome/i.test(navigator.userAgent);
+        }
+
+        // App links and Play Store
+        const playStoreUrl = "https://play.google.com/store/apps/details?id=com.digipin.bharat";
+        const intentUrl = digipin
+            ? `intent://harshil5233.github.io/digipin-bharat/digpin?pin=${encodeURIComponent(digipin)}#Intent;scheme=https;package=com.digipin.bharat;end`
+            : "";
+        const httpsUrl = digipin
+            ? `https://harshil5233.github.io/digipin-bharat/digpin?pin=${encodeURIComponent(digipin)}`
+            : "";
+        const customSchemeUrl = digipin
+            ? `digipin://open?pin=${encodeURIComponent(digipin)}`
+            : "";
+
+        let tried = false;
+        let fallbackTimeout, playstoreTimeout;
+
+        function tryOpenApp(forceRetry) {
             if (!digipin) {
                 showFallback('Invalid DigiPin provided');
                 return;
             }
 
-            attemptCount++;
-            
-            // Update status
-            document.getElementById('status').textContent = `Attempt ${attemptCount}: Opening DigiPin app...`;
-            
-            // Try different app opening methods
-            const appUrls = [
-                `intent://harshil5233.github.io/digipin-bharat/digpin?pin=${digipin}#Intent;scheme=https;package=com.digipin.bharat;end`,
-                `https://harshil5233.github.io/digipin-bharat/digpin?pin=${digipin}`,
-                `digipin://open?pin=${digipin}`
-            ];
+            document.getElementById('status').textContent = 'Opening DigiPin Bharat app...';
+            document.getElementById('retryBtn').style.display = 'none';
+            document.querySelector('.spinner').style.display = 'block';
 
-            // Try to open the app
-            const currentUrl = appUrls[Math.min(attemptCount - 1, appUrls.length - 1)];
-            
-            // For Android devices
-            if (/Android/i.test(navigator.userAgent)) {
-                // Create a hidden iframe to trigger the app
-                const iframe = document.createElement('iframe');
-                iframe.style.display = 'none';
-                iframe.src = currentUrl;
-                document.body.appendChild(iframe);
-                
-                // Remove iframe after attempt
-                setTimeout(() => {
-                    document.body.removeChild(iframe);
-                }, 1000);
+            // Clear timeouts if retrying
+            if (fallbackTimeout) clearTimeout(fallbackTimeout);
+            if (playstoreTimeout) clearTimeout(playstoreTimeout);
+
+            let opened = false;
+            tried = true;
+
+            // Attempt intent on Chrome Android
+            if (isChromeOnAndroid()) {
+                window.location.href = intentUrl;
+            } else if (isAndroid()) {
+                // Fallback: open https deep link (may open app if supported)
+                window.location.href = httpsUrl;
             } else {
-                // For other platforms, try direct navigation
-                window.location.href = currentUrl;
+                // Custom scheme for iOS or others (will just show fallback)
+                window.location.href = customSchemeUrl;
             }
 
-            // Set timeout to show fallback options
-            setTimeout(() => {
-                if (attemptCount >= maxAttempts) {
-                    showFallback('App not installed or failed to open');
-                } else {
-                    // Show retry option
-                    document.getElementById('retryBtn').style.display = 'inline-block';
-                    document.getElementById('status').textContent = 'App not responding. Try again or download from Play Store.';
-                }
-            }, 3000);
-
-            // Always show Play Store option after first attempt
-            setTimeout(() => {
+            // After 2s, show Play Store/download option if not opened
+            fallbackTimeout = setTimeout(function() {
+                document.querySelector('.spinner').style.display = 'none';
                 document.getElementById('playStoreBtn').style.display = 'inline-block';
+                document.getElementById('retryBtn').style.display = 'inline-block';
+                document.getElementById('status').textContent =
+                    'If the app did not open, please install DigiPin Bharat or try again.';
             }, 2000);
+
+            // After 5s, auto-redirect to Play Store as last resort (Android only)
+            playstoreTimeout = setTimeout(function() {
+                window.location.href = playStoreUrl;
+            }, 5000);
         }
 
         function showFallback(message) {
             document.querySelector('.spinner').style.display = 'none';
             document.getElementById('status').textContent = message;
             document.getElementById('playStoreBtn').style.display = 'inline-block';
-            
-            // Auto-redirect to Play Store after 5 seconds
-            setTimeout(() => {
-                window.location.href = 'https://play.google.com/store/apps/details?id=com.digipin.bharat';
-            }, 5000);
         }
 
-        // Start the app opening process
-        setTimeout(tryOpenApp, 1000);
+        // Automatically try to open app on load
+        setTimeout(() => tryOpenApp(false), 900);
 
-        // Handle page visibility change (user switched back to browser)
+        // If user switches back to browser (app not installed), show fallback
         document.addEventListener('visibilitychange', function() {
-            if (!document.hidden && attemptCount > 0) {
-                // User came back to browser, app probably didn't open
+            if (!document.hidden && tried) {
                 setTimeout(() => {
                     if (document.getElementById('playStoreBtn').style.display === 'none') {
                         showFallback('Please install DigiPin Bharat app');
                     }
-                }, 1000);
+                }, 700);
             }
         });
     </script>
